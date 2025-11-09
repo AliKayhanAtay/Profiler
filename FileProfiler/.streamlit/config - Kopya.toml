@@ -1,0 +1,40 @@
+[server]
+
+# Automatically rerun script when the file is modified on disk.
+#
+# Default: false
+runOnSave = true
+
+# Max size, in megabytes, for files uploaded with the file_uploader.
+#
+# Default: 200
+maxUploadSize = 10
+
+[theme]
+
+# This can be one of the following: "light" or "dark".
+base = "light"
+
+[ldap]
+host = "ldap.example.com"   # AD DC or OpenLDAP host
+port = 636                  # 389 (StartTLS) or 636 (LDAPS)
+use_ssl = true              # true for LDAPS; false for 389+StartTLS
+start_tls = false           # set true if you use StartTLS on 389
+
+# A read-only service account used to search for the user's DN:
+bind_dn = "cn=readonly,ou=svc,dc=example,dc=com"
+bind_password = "REDACTED"
+
+# Where to search users
+base_dn = "dc=example,dc=com"
+
+# Attribute you type into the login form (e.g., "uid" for OpenLDAP, "sAMAccountName" for AD)
+user_id_attr = "uid"        # for AD you likely want: "sAMAccountName"
+
+# Optional: restrict to these groups (DNs). Leave empty to allow all.
+allowed_groups = [
+  "cn=App Users,ou=groups,dc=example,dc=com"
+]
+
+# Optional (TLS cert pinning). Leave empty to use system CAs.
+# ca_certs_file = "/etc/ssl/certs/ca-bundle.crt"
