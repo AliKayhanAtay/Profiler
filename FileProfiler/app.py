@@ -2,8 +2,6 @@ import streamlit as st
 import time
 import pandas as pd
 import os
-import uuid
-import time
 from pathlib import Path
 from extractor import get_text
 #from ollama import generate
@@ -12,10 +10,10 @@ from prompt import *
 import json
 
 
-model = 'qwen3:8b'
+
 question = 'Is there any personal information in the document ?'
 
-def ask_ollama_old(text, question, model=model):
+def ask_ollama_old(text, question, model):
     resp = requests.post(
         "http://localhost:11434/api/chat",
         json={
@@ -33,22 +31,20 @@ def ask_ollama_old(text, question, model=model):
     r = json.loads(resp.text)
     return r
 
-def ask(text, question, model=model):
-    headers = {"Authorization": f"Bearer {os.getenv("OPENROUTER_KEY")}",
+def ask(text, question, model):
+    headers = {"Authorization": f"Bearer {os.getenv('OPENROUTER_KEY')}",
                "Content-Type": "application/json",}
 
-    data = {"model": "qwen/qwen3-8b",
-            "messages": [{"role": "user", "content": sp},
+    data = {"model": model,
+            "messages": [{"role": "system", "content": sp},
                          {"role": "user", "content": up.format(text, question)}],}
 
     r = requests.post(os.getenv("OPENROUTER_URL"),
                     headers=headers, data=json.dumps(data))
     if r.status_code==200:
-            print(r.status_code)
             resp = json.loads(r.text.strip())["choices"][0]["message"]["content"]
             return resp
     else:
-          print(r.status_code)
           return None
 
 st.set_page_config(page_title="File Profiler", page_icon="🌦️", layout="wide")
@@ -80,24 +76,32 @@ if  c1 and c2 and c3:
     rows = []    
     c = 0
     with st.empty():
-        for f in directory.iterdir():
-            if f.is_file():
+        rows = []    
+        c = 0
+        for current_root, dirs, files in os.walk(path_input):
+            for name in files:
+                f = Path(os.path.join(current_root, name))
                 rows.append({
-                "Full Path": str(f.resolve()),
+                "Full Path": f,
                 "File Name": f.stem,
                 "Extension": f.suffix.lstrip('.')
                 })
                 c += 1
-                st.write(f'File locations are being scanned... {c} files scanned')
-                time.sleep(.01)
+                st.write(f'Scanning... {c} files found')
+                time.sleep(.01)     
+        if len(rows)==0:
+            st.stop()
+
 
     df = pd.DataFrame(rows)
     out = pd.DataFrame()
-    tt = 0
+
     with st.spinner('Reading files... Thinking....', show_time=True):
         with st.empty():
             for idx, row in df.iterrows():
                 text = get_text(row['Full Path'])
+                if text is None:
+                    continue
                 response = ask(text,
                             st.session_state["question_input"],
                             st.session_state["model_input"])
@@ -115,5 +119,5 @@ if  c1 and c2 and c3:
                     st.write('Connection error !!! Try 2 minutes later')
 
             st.write('List saved... -> data.xlsx')
-            df.to_excel('data.xlsx')
+            out.to_excel('data.xlsx')
                 

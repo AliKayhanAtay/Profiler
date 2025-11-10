@@ -5,6 +5,7 @@ from docx.oxml.table import CT_Tbl
 from docx.text.paragraph import Paragraph
 from docx.table import Table
 import json
+from pathlib import Path
 import re
 
 def df_to_ndjson_str(df):
@@ -37,12 +38,14 @@ def parse_docx(file_path, nrow=5):
 
             df = pd.DataFrame(table_data, columns=columns).head(nrow)
             df_ndjson = df_to_ndjson_str(df)
+            df_ndjson = f"[TABLE]\\n{df_ndjson}\\n[/TABLE]"
             blocks.append({"type": "table", "text": df_ndjson})
-
-    df = pd.DataFrame(blocks) # Cols = type, text, file_type
-    df['file_type'] = 'docx'
-
-    return df
+    if not blocks:
+        return pd.DataFrame({"type": [], "text": [], "file_type": []})
+    else:
+        df = pd.DataFrame(blocks)
+        df['file_type'] = 'docx'
+        return df
 
 
 def cleaner(df):
@@ -52,12 +55,20 @@ def cleaner(df):
     pattern = "[" + "".join(map(re.escape, BIDI_CHARS)) + "]"
     df["text"] = df["text"].str.replace(pattern, "", regex=True)
     df["text"] = df["text"].str.replace("\t"," ", regex=True)
+    df["text"] = df["text"].str.replace(r"\s+", " ", regex=True)
     df = df[df["text"].str.strip().str.len()>0].reset_index(drop=True)
 
     return df
 
 def get_text(file_path):
-    df = parse_docx(file_path)
-    df = cleaner(df)
-    text = '\n'.join(df['text'])
-    return text
+    ext = Path(file_path).suffix.lower()
+    if ext=='.docx':
+        df = parse_docx(file_path)
+        df = cleaner(df)
+        text = '\n'.join(df['text'])
+        if len(text)>0:
+            return text
+        else:
+            return None
+    else:
+        return None
