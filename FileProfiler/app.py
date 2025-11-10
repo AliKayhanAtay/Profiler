@@ -101,15 +101,19 @@ if  c1 and c2 and c3:
                 response = ask(text,
                             st.session_state["question_input"],
                             st.session_state["model_input"])
-                try:
-                    r_js = json.loads(response)
-                    df = pd.DataFrame({k:[v] for k, v in r_js.items()})
-                except Exception as e:
-                    print(e)
-                    df = pd.DataFrame({'raw':[response]})
-                    df['Path'] = row['Full Path']
+                if response:
+                    try:
+                        r_js = json.loads(response)
+                        df = pd.DataFrame({k:[v] for k, v in r_js.items()})
+                    except Exception as e:
+                        print(e)
+                        df = pd.DataFrame({'raw':[response]})
+                        df['Path'] = row['Full Path']
+                    out = pd.concat([out, df]).reset_index(drop=True)
+                    st.dataframe(out.tail(5))                           
+                else:
+                    st.write('Connection error !!! Try 2 minutes later')
 
-                out = pd.concat([out, df]).reset_index(drop=True)
-                st.dataframe(out.tail(5))   
-        st.write('List saved... -> data.xlsx')
-        df.to_excel('data.xlsx')
+            st.write('List saved... -> data.xlsx')
+            df.to_excel('data.xlsx')
+                
