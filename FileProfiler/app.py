@@ -6,10 +6,11 @@ import uuid
 import time
 from pathlib import Path
 from extractor import get_text
-from ollama import generate
+#from ollama import generate
 import requests
 from prompt import *
 import json
+
 
 model = 'qwen3:8b'
 question = 'Is there any personal information in the document ?'
@@ -43,9 +44,11 @@ def ask(text, question, model=model):
     r = requests.post(os.getenv("OPENROUTER_URL"),
                     headers=headers, data=json.dumps(data))
     if r.status_code==200:
+            print(r.status_code)
             resp = json.loads(r.text.strip())["choices"][0]["message"]["content"]
             return resp
     else:
+          print(r.status_code)
           return None
 
 st.set_page_config(page_title="File Profiler", page_icon="🌦️", layout="wide")
@@ -101,10 +104,12 @@ if  c1 and c2 and c3:
                 try:
                     r_js = json.loads(response)
                     df = pd.DataFrame({k:[v] for k, v in r_js.items()})
-                except:
+                except Exception as e:
+                    print(e)
                     df = pd.DataFrame({'raw':[response]})
                     df['Path'] = row['Full Path']
 
                 out = pd.concat([out, df]).reset_index(drop=True)
                 st.dataframe(out.tail(5))   
+        st.write('List saved... -> data.xlsx')
         df.to_excel('data.xlsx')
