@@ -1,3 +1,8 @@
+import os
+import requests
+import json
+#from ollama import generate
+
 sp = """
 You are an expert large language model specialized in DOCUMENT PROFILING and QUESTION ANSWERING.
 Output ONLY a valid JSON object. Do not include any other text, explanation, markdown, or formatting. 
@@ -49,4 +54,38 @@ Return ONLY a single valid JSON object as described in the system prompt.
 {}
 """
 
-print(sp)
+def ask(text, question, model):
+    headers = {"Authorization": f"Bearer {os.getenv('OPENROUTER_KEY')}",
+               "Content-Type": "application/json",}
+
+    data = {"model": model,
+            "messages": [{"role": "system", "content": sp},
+                         {"role": "user", "content": up.format(text, question)}],}
+
+    r = requests.post(os.getenv("OPENROUTER_URL"),
+                    headers=headers, data=json.dumps(data))
+    if r.status_code==200:
+            resp = json.loads(r.text.strip())["choices"][0]["message"]["content"]
+            return resp
+    else:
+          print(r.text)
+          return None
+    
+
+# def ask_ollama_old(text, question, model):
+#     resp = requests.post(
+#         "http://localhost:11434/api/chat",
+#         json={
+#             "model": model,
+#             "messages":[{'role': 'system', 'content': sp, }, 
+#                         {'role': 'user', 'content': up.format(text, question),}],
+#             "stream": False,
+#             'format':"json",
+#             "options": {"temperature": 0.0,
+#                         "top_p": 0.9,
+#                         #"num_predict": 256,   # max tokens to generate
+#                         #"stop": ["</end>"],   # optional stop tokens
+#                         },},)    
+
+#     r = json.loads(resp.text)
+#     return r    

@@ -1,51 +1,12 @@
 import streamlit as st
-import time
 import pandas as pd
 import os
 from pathlib import Path
 from extractor import get_text
-#from ollama import generate
-import requests
-from prompt import *
+from prompt import ask
 import json
 
-
-
 question = 'Is there any personal information in the document ?'
-
-def ask_ollama_old(text, question, model):
-    resp = requests.post(
-        "http://localhost:11434/api/chat",
-        json={
-            "model": model,
-            "messages":[{'role': 'system', 'content': sp, }, 
-                        {'role': 'user', 'content': up.format(text, question),}],
-            "stream": False,
-            'format':"json",
-            "options": {"temperature": 0.0,
-                        "top_p": 0.9,
-                        #"num_predict": 256,   # max tokens to generate
-                        #"stop": ["</end>"],   # optional stop tokens
-                        },},)    
-
-    r = json.loads(resp.text)
-    return r
-
-def ask(text, question, model):
-    headers = {"Authorization": f"Bearer {os.getenv('OPENROUTER_KEY')}",
-               "Content-Type": "application/json",}
-
-    data = {"model": model,
-            "messages": [{"role": "system", "content": sp},
-                         {"role": "user", "content": up.format(text, question)}],}
-
-    r = requests.post(os.getenv("OPENROUTER_URL"),
-                    headers=headers, data=json.dumps(data))
-    if r.status_code==200:
-            resp = json.loads(r.text.strip())["choices"][0]["message"]["content"]
-            return resp
-    else:
-          return None
 
 st.set_page_config(page_title="File Profiler", page_icon="🌦️", layout="wide")
 title_row = st.container(horizontal=True, vertical_alignment="bottom")
@@ -58,7 +19,7 @@ with st.container(border=True):
                                help=None, autocomplete=None, on_change=None, placeholder=None, 
                                disabled=False, label_visibility="visible", icon=None, width="stretch")
     
-    options = ['qwen3:8b', 'llama3:8b']
+    options = ['qwen/qwen3-8b', 'llama3:8b']
     model_input = st.selectbox('Select your model...', options=options, index=0, key='model_input',
                                 help=None, on_change=None, placeholder=None, disabled=False, 
                                 label_visibility="visible", accept_new_options=False, width="stretch")
@@ -87,8 +48,7 @@ if  c1 and c2 and c3:
                 "Extension": f.suffix.lstrip('.')
                 })
                 c += 1
-                st.write(f'Scanning... {c} files found')
-                time.sleep(.01)     
+                st.write(f'Scanning... {c} files found') 
         if len(rows)==0:
             st.stop()
 
